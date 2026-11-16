@@ -55,7 +55,7 @@ class WrapperTest(unittest.TestCase):
         r = self.run_w("--name", "t1")
         self.assertEqual(r.returncode, 0, r.stderr)
         argv = self.call()["argv"]
-        self.assertEqual(argv[argv.index("--model") + 1], "gemini-3.8-flash-high")
+        self.assertEqual(argv[argv.index("--model") + 1], "gemini-4-hydrogen-high")
         self.assertEqual(argv[argv.index("--effort") + 1], "high")
         self.assertEqual(argv[argv.index("--mode") + 1], "accept-edits")
         self.assertIn("--sandbox", argv)
@@ -69,9 +69,17 @@ class WrapperTest(unittest.TestCase):
         self.assertEqual(m["tool_errors"][0]["tool"], "run_command")
 
     def test_effort_and_model_policy(self):
-        r = self.run_w("--name", "t2", "--effort", "low")
+        r = self.run_w("--name", "t2", "--effort", "xhigh")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        argv = self.call()["argv"]
+        self.assertEqual(argv[argv.index("--model") + 1], "gemini-4-hydrogen-xhigh")
+        self.assertEqual(argv[argv.index("--effort") + 1], "xhigh")
+        r = self.run_w("--name", "t5", "--model", "gemini-3.8-flash", "--effort", "low")
         argv = self.call()["argv"]
         self.assertEqual(argv[argv.index("--model") + 1], "gemini-3.8-flash-low")
+        r = self.run_w("--name", "t6", "--model", "gemini-3.8-flash", "--effort", "xhigh")
+        self.assertEqual(r.returncode, 2)          # flash has no xhigh
+        self.assertIn("not available", r.stderr)
         r = subprocess.run([sys.executable, WRAPPER, "--root", self.root, "--prompt-file", self.brief, "--name", "t4"],
                            capture_output=True, text=True, env=self.env)
         self.assertEqual(r.returncode, 2)          # --effort is required

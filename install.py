@@ -65,7 +65,7 @@ def main():
     if not os.path.exists(cfg):
         os.makedirs(os.path.dirname(cfg), exist_ok=True)
         with open(cfg, "w", encoding="utf-8") as f:
-            json.dump({k: agy_write.DEFAULTS[k] for k in ("allowed_models", "max_concurrent", "timeout")},
+            json.dump({k: agy_write.DEFAULTS[k] for k in ("allowed_models", "model_efforts", "max_concurrent", "timeout")},
                       f, indent=2)
             f.write("\n")
         print(f"Default config written: {cfg}")

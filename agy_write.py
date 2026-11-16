@@ -7,7 +7,7 @@ command, event stream, final message and meta.json (model, effort, mode, token u
 conversation id, exit code, files agy wrote, files changed during the run).
 
 Usage:
-  python agy_write.py --name <slug> --effort <low|medium|high> [--model <id>]
+  python agy_write.py --name <slug> --effort <low|medium|high|xhigh> [--model <id>]
                       [--resume <conversation_id> | --continue] [--add-dir <dir>]...
                       [--with <extra preamble>]... [--timeout <seconds>] [--wait <seconds>]
                       [--root <dir>] [--prompt-file <path>]   (prompt may also come on stdin)
@@ -28,13 +28,17 @@ import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 IS_WIN = os.name == "nt"
-EFFORTS = ["low", "medium", "high"]
+EFFORTS = ["low", "medium", "high", "xhigh"]
 
 DEFAULTS = {
     # models the wrapper will accept; the first one is the default
-    "allowed_models": ["gemini-3.8-flash"],
-    # models whose agy ids carry the effort as a suffix (gemini-3.8-flash-high); --effort is passed as well
-    "effort_suffix_models": ["gemini-3.8-flash"],
+    "allowed_models": ["gemini-4-hydrogen", "gemini-3.8-flash"],
+    # efforts each model offers; agy ids carry the effort as a suffix (gemini-4-hydrogen-high) and
+    # --effort is passed as well. A model not listed here is passed as is.
+    "model_efforts": {
+        "gemini-4-hydrogen": ["low", "medium", "high", "xhigh"],
+        "gemini-3.8-flash": ["low", "medium", "high"],
+    },
     "max_concurrent": 4,
     # agy execution mode: accept-edits lets agy write files; shell commands stay denied in headless mode
     # unless allowed in agy's own settings.json (permissions.allow)
@@ -296,7 +300,10 @@ def main():
     if model not in allowed:
         die(f"Model '{model}' is not permitted (allowed: {', '.join(allowed)})")
     effort = a.effort
-    model_id = f"{model}-{effort}" if model in cfg["effort_suffix_models"] else model
+    levels = cfg["model_efforts"].get(model)
+    if levels is not None and effort not in levels:
+        die(f"Effort '{effort}' is not available for {model} (available: {', '.join(levels)})")
+    model_id = f"{model}-{effort}" if levels is not None else model
     timeout = cfg["timeout"] if a.timeout is None else a.timeout
     if timeout < 0:
         die("--timeout must be >= 0")
